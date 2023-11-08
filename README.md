@@ -2,7 +2,7 @@
 
 Index:
 - [Authors]()
-- [Installation]()
+- [Installation](Installation)
 - [Usage]()
 - [Details]()
 
