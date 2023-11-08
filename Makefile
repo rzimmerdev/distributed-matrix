@@ -1,6 +1,6 @@
 CC=mpicc
 CFLAGS=-fopenmp
-TARGET=hybrid_program
+TARGET=main
 
 all: $(TARGET)
 
