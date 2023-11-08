@@ -59,4 +59,17 @@ To run the main source file, use (where _<args>_ are arguments accepted by mpiru
 make run ARGS="<args>"
 ```
 
+Example:
+
+```bash
+> make all
+> make run ARGS="-np 4"
+
+Hello from MPI process 0 out of 4
+Hello from MPI process 1 out of 4
+...
+Hello from thread 4 of MPI process 0
+Hello from thread 4 of MPI process 2
+```
+
 ## Details
