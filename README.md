@@ -1,16 +1,16 @@
 # cad-2023
 
 ## Index:
-- [Authors](https://github.com/rzimmerdev/cad-2023/tree/main#authors)
-- [Installation](https://github.com/rzimmerdev/cad-2023/tree/main#installation)
-- [Usage](https://github.com/rzimmerdev/cad-2023/tree/main#usage)
-- [Details](https://github.com/rzimmerdev/cad-2023/tree/main#details)
+1. [Authors](https://github.com/rzimmerdev/cad-2023/tree/main#authors)
+2. [Installation](https://github.com/rzimmerdev/cad-2023/tree/main#installation)
+3. [Usage](https://github.com/rzimmerdev/cad-2023/tree/main#usage)
+4. [Details](https://github.com/rzimmerdev/cad-2023/tree/main#details)
 
 ## Authors
 
-* Rafael Zimmer
-* Danielle Modesti
-* Hélio Nogueiro Cardoso
+* __Rafael Zimmer__
+* __Danielle Modesti__
+* __Hélio Nogueiro Cardoso__
 
 ## Installation
 
