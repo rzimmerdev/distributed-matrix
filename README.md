@@ -1,5 +1,17 @@
 # cad-2023
 
+Index:
+- [Authors]()
+- [Installation]()
+- [Usage]()
+- [Details]()
+
+## Authors
+
+* Rafael Zimmer
+* Danielle Modesti
+* Hélio Nogueiro Cardoso
+
 ## Installation
 
 Implementation used: [OpenMPI](https://www.open-mpi.org/software/ompi/v5.0/)
@@ -34,3 +46,7 @@ brew install open-mpi
 * On [Windows](https://learn.microsoft.com/en-us/message-passing-interface/microsoft-mpi):
 
 Download the wizard and install from the official [Microsoft-MPI](https://learn.microsoft.com/en-us/message-passing-interface/microsoft-mpi) page, and add to the PATH environment variable if needed. 
+
+## Usage
+
+## Details
