@@ -49,4 +49,14 @@ Download the wizard and install from the official [Microsoft-MPI](https://learn.
 
 ## Usage
 
+To compile and link all source code, and header files use:
+```bash
+make all
+```
+
+To run the main source file, use (where _<args>_ are arguments accepted by mpirun):
+```bash
+make run ARGS="<args>"
+```
+
 ## Details
