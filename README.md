@@ -8,9 +8,11 @@
 
 ## Authors
 
-* __Rafael Zimmer__
 * __Danielle Modesti__
 * __Hélio Nogueiro Cardoso__
+* __Pedro Falcão Rocha__
+* __Luis Eduardo de Brito Câmara__
+* __Rafael Zimmer__
 
 ## Installation
 
