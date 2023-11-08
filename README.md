@@ -1,10 +1,10 @@
 # cad-2023
 
-Index:
-- [Authors]()
-- [Installation](Installation)
-- [Usage]()
-- [Details]()
+## Index:
+- [Authors](https://github.com/rzimmerdev/cad-2023/tree/main#authors)
+- [Installation](https://github.com/rzimmerdev/cad-2023/tree/main#installation)
+- [Usage](https://github.com/rzimmerdev/cad-2023/tree/main#usage)
+- [Details](https://github.com/rzimmerdev/cad-2023/tree/main#details)
 
 ## Authors
 
