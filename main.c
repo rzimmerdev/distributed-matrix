@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include <mpi.h>
 
+/*
+ * GNU Project. GNU C Library (glibc). Version 2.38, 2023, http://www.gnu.org/software/libc/.
+ * Last updated 29, August, 2023.
+ * https://en.wikipedia.org/wiki/Linear_congruential_generator
+ */
 #define LCG_A 1103515245
 #define LCG_C 12345
 #define LCG_M 1 << 31
@@ -40,7 +45,7 @@ int main(int argc, char *argv[]) {
     S = atoi(argv[2]);
 
     int portion_size = (N + size - 1) / size;
-    int *matrix_portion = (int *)malloc(portion_size * N * sizeof(int));
+    int *matrix_portion = (int *) malloc(portion_size * N * sizeof(int));
     if (matrix_portion == NULL) {
         fprintf(stderr, "Cannot allocate memory for the matrix portion.\n");
         MPI_Finalize();
