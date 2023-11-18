@@ -58,14 +58,14 @@ make all
 
 To run the main source file, use (where _<args>_ are arguments accepted by mpirun):
 ```bash
-make run ARGS="<args>"
+make N=3 S=42 T=4 run
 ```
 
 Example:
 
 ```bash
 > make all
-> make run ARGS="-np 4"
+> make N=3 S=42 T=4 run
 
 Hello from MPI process 0 out of 4
 Hello from MPI process 1 out of 4

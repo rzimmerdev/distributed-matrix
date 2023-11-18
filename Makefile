@@ -1,11 +1,33 @@
 CC=mpicc
-CFLAGS=-fopenmp
-TARGET=main
 
-all: $(TARGET)
+EXE=main
 
-$(TARGET): $(TARGET).c
-	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).c
+N ?= 3
+S ?= 12345
+T ?= 4
+
+HOSTFILE=hostfile.txt
+
+CFLAGS=-Wall
+
+SRC=main.c
+
+OBJ=$(SRC:.c=.o)
+
+all: $(EXE)
+
+$(EXE): $(OBJ)
+	$(CC) $(CFLAGS) -o $@ $^
+
+run: $(EXE)
+	mpirun -np $(T) --hostfile $(HOSTFILE) ./$< $(N) $(S)
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(EXE) $(OBJ)
+
+.PHONY: all clean run
+
+.SUFFIXES: .c .o
+
+.c.o:
+	$(CC) $(CFLAGS) -c $<
