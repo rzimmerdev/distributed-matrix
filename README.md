@@ -9,7 +9,7 @@
 ## Authors
 
 * __Danielle Modesti__
-* __Hélio Nogueiro Cardoso__
+* __Hélio Nogueira Cardoso__
 * __Pedro Falcão Rocha__
 * __Luis Eduardo de Brito Câmara__
 * __Rafael Zimmer__
