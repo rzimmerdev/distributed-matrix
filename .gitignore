@@ -54,3 +54,4 @@ dkms.conf
 # Remove editor configs
 .idea
 .vscode
+/main

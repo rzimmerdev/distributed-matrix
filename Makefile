@@ -3,8 +3,8 @@ CC=mpicc
 EXE=main
 
 N ?= 3
-S ?= 12345
-T ?= 4
+S ?= 42
+T ?= 3
 
 HOSTFILE=hostfile.txt
 
