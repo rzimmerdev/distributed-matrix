@@ -5,6 +5,8 @@
 #define DATA_TAG 0
 #define MAX_TAG 1
 #define MIN_TAG 2
+#define MAX_SUM_TAG 3
+#define MIN_SUM_TAG 4
 #define INTERVAL 100
 #define INT_MAX 2147483647
 
@@ -76,49 +78,68 @@ int main(int argc, char **argv) {
         }
     }
 
+    int *p_max = (int *) calloc(block_size, sizeof(int));
+    int *p_min = (int *) calloc(block_size, sizeof(int));
+
     for (i = 0; i < block_size; ++i) {
         for (j = i + 1; j < block_size; ++j) {
             int distance = abs(block[i] - block[j]);
+            p_max[i] = MAX(p_max[i], distance);
+            p_min[i] = MIN(p_min[i], distance);
             max = MAX(max, distance);
             min = MIN(min, distance);
         }
     }
 
     int *recv_block = (int *) malloc(default_size * sizeof(int));
-    int p_max, p_min;
 
     for (int p = rank + 1; p < t; p++) {
-        p_max = 0, p_min = INT_MAX;
         MPI_Recv(recv_block, default_size, MPI_INT, p, DATA_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-        for (i = 0; i < default_size; i++) {
-            for (j = 0; j < block_size; j++) {
+        for (j = 0; j < block_size; j++) {
+            for (i = 0; i < default_size; i++) {
                 int distance = abs(recv_block[i] - block[j]);
-                p_max = MAX(p_max, distance);
-                p_min = MIN(p_min, distance);
+                p_max[j] = MAX(p_max[j], distance);
+                p_min[j] = MIN(p_min[j], distance);
+                max = MAX(max, distance);
+                min = MIN(min, distance);
             }
         }
-
-        max = MAX(max, p_max);
-        min = MIN(min, p_min);
     }
+
+    int sum_max = 0, sum_min = 0;
+    for (int i = 0; i < block_size; i++) {
+        sum_max += p_max[i];
+        sum_min += p_min[i];
+    }
+
+    free(p_max);
+    free(p_min);
 
     if (rank != 0) {
         printf("Process %d\n", rank);
         MPI_Waitall(rank, requests, MPI_STATUSES_IGNORE);
         MPI_Send(&max, 1, MPI_INT, 0, MAX_TAG, MPI_COMM_WORLD);
         MPI_Send(&min, 1, MPI_INT, 0, MIN_TAG, MPI_COMM_WORLD);
+        MPI_Send(&sum_max, 1, MPI_INT, 0, MAX_SUM_TAG, MPI_COMM_WORLD);
+        MPI_Send(&sum_min, 1, MPI_INT, 0, MIN_SUM_TAG, MPI_COMM_WORLD);
     }
     else {
         int global_max = max, global_min = min;
+        int global_sum_max = sum_max, global_sum_min = sum_min;
 
         for (int p = 1; p < t; p++) {
             MPI_Recv(&max, 1, MPI_INT, p, MAX_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             MPI_Recv(&min, 1, MPI_INT, p, MIN_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&sum_max, 1, MPI_INT, p, MAX_SUM_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&sum_min, 1, MPI_INT, p, MIN_SUM_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             global_max = MAX(global_max, max);
             global_min = MIN(global_min, min);
+            global_sum_max += sum_max;
+            global_sum_min += sum_min;
         }
         printf("Max: %d; Min: %d\n", global_max, global_min);
+        printf("Sum of max: %d; Sum of min: %d\n", global_sum_max, global_sum_min);
     }
     free(block);
     MPI_Finalize();
