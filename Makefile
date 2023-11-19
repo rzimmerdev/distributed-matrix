@@ -1,33 +1,13 @@
 CC=mpicc
-
-EXE=main
-
-N ?= 3
-S ?= 42
-T ?= 3
-
-HOSTFILE=hostfile.txt
-
 CFLAGS=-Wall
 
-SRC=main.c
+all: main
 
-OBJ=$(SRC:.c=.o)
+main: main.c
+	$(CC) $(CFLAGS) -o main main.c
 
-all: $(EXE)
-
-$(EXE): $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $^
-
-run: $(EXE)
-	mpirun -np $(T) --hostfile $(HOSTFILE) ./$< $(N) $(S)
+run: main
+	mpirun -np $(T) ./main $(N) $(S)
 
 clean:
-	rm -f $(EXE) $(OBJ)
-
-.PHONY: all clean run
-
-.SUFFIXES: .c .o
-
-.c.o:
-	$(CC) $(CFLAGS) -c $<
+	rm -f main
