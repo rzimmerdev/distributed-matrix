@@ -190,6 +190,8 @@ void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
 
         (*min_e)[i] = MIN((*min_e)[i], min_e_local);
     }
+
+    #pragma omp taskwait
 }
 
 int get_params(int argc, char **argv, int *n, int *s, int *t) {
