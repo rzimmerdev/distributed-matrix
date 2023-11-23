@@ -14,11 +14,17 @@
 #define MIN(a, b) ((b) > (a) ? (a) : (b))
 
 int get_params(int argc, char **argv, int *n, int *s, int *t);
+
 int *get_sendcounts(int n, int n_procs);
+
 int *receive_displacement(int n_procs, int *sendcounts);
+
 int *create_vector(int n, int n_procs, int *sendcounts);
+
 int *receive_coord(int n, int n_procs, int rank, int *sendcounts);
+
 int manhattan(int x1, int y1, int z1, int x2, int y2, int z2);
+
 double euclidean(int x1, int y1, int z1, int x2, int y2, int z2);
 
 void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
@@ -82,7 +88,7 @@ int main(int argc, char **argv) {
 
         set_distances(X, Y, Z, X_p, Y_p, Z_p,
                       sendcounts[rank], sendcounts[p], rank, p,
-                      &max_m_local, &min_m_local, &max_e_local,&min_e_local);
+                      &max_m_local, &min_m_local, &max_e_local, &min_e_local);
     }
 
     double max_sum_e = 0, min_sum_e = 0;
@@ -98,10 +104,10 @@ int main(int argc, char **argv) {
         min_sum_m += min_m_local[i] < INF ? min_m_local[i] : 0;
 
         max_m = MAX(max_m, max_m_local[i]);
-        min_m = MIN(min_m, min_m_local[i]);
+        min_m = MIN(min_m, min_m_local[i] < INF ? min_m_local[i] : INF);
 
         max_e = MAX(max_e, max_e_local[i]);
-        min_e = MIN(min_e, min_e_local[i]);
+        min_e = MIN(min_e, min_e_local[i] < INF ? min_e_local[i] : INF);
     }
 
     int max_m_global, min_m_global;
@@ -159,29 +165,28 @@ void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
                    int **max_m, int **min_m, double **max_e, double **min_e) {
     int i, j, offset_start;
 
-//    #pragma omp parallel for private(j, offset_start)
+#pragma omp parallel for private(j, offset_start)
     for (i = 0; i < n; i++) {
         offset_start = p > rank ? i : i + 1;
 
         int max_m_local = 0, min_m_local = (int) INF;
         double max_e_local = 0, min_e_local = (double) INF;
 
-//        #pragma omp simd reduction(max:max_m_local) reduction(min:min_m_local) reduction(max:max_e_local) reduction(min:min_e_local) aligned(x, y, z, x_p, y_p, z_p: 32)
+        #pragma omp simd reduction(max:max_m_local) reduction(min:min_m_local) reduction(max:max_e_local) reduction(min:min_e_local) aligned(x, y, z, x_p, y_p, z_p: 32)
         for (j = offset_start; j < m; j++) {
-            double e = euclidean(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
-            int m = manhattan(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
 
-            max_m_local = MAX(max_m_local, m);
-            min_m_local = MIN(min_m_local, m);
-
-            max_e_local = MAX(max_e_local, e);
-            min_e_local = MIN(min_e_local, e);
+                int m = manhattan(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
+                max_m_local = MAX(max_m_local, m);
+                min_m_local = MIN(min_m_local, m);
+                double e = euclidean(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
+                max_e_local = MAX(max_e_local, e);
+                min_e_local = MIN(min_e_local, e);
         }
-        (*max_m)[i] = max_m_local;
-        (*min_m)[i] = min_m_local;
+        (*max_m)[i] = MAX((*max_m)[i], max_m_local);
+        (*min_m)[i] = MIN((*min_m)[i], min_m_local);
 
-        (*max_e)[i] = max_e_local;
-        (*min_e)[i] = min_e_local;
+        (*max_e)[i] = MAX((*max_e)[i], max_e_local);
+        (*min_e)[i] = MIN((*min_e)[i], min_e_local);
     }
 }
 
