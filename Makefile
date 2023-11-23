@@ -7,7 +7,7 @@ main: main.c
 	$(CC) $(CFLAGS) -o main main.c
 
 run: main
-	mpirun -np $(T) ./main $(N) $(S)
+	mpirun -np 4 ./main $(N) $(S) $(T)
 
 clean:
 	rm -f main
