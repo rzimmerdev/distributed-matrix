@@ -7,6 +7,8 @@
 #define Y_TAG 1
 #define Z_TAG 2
 
+#define INF 1e9
+
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((b) > (a) ? (a) : (b))
 
@@ -52,12 +54,12 @@ int main(int argc, char **argv) {
     int *min_m_local = malloc(sendcounts[rank] * sizeof(int));
 
     for (int i = 0; i < sendcounts[rank]; i++) {
-        min_e_local[i] = (double) INFINITY;
-        min_m_local[i] = (int) INFINITY;
+        min_e_local[i] = (double) INF;
+        min_m_local[i] = (int) INF;
     }
 
-    int max_m = (int) INFINITY, min_m = 0;
-    double max_e = (double) INFINITY, min_e = 0;
+    int max_m = 0, min_m = (int) INF;
+    double max_e = 0, min_e = (double) INF;
 
     int p, i, j, offset_start = 0;
 
@@ -76,13 +78,14 @@ int main(int argc, char **argv) {
         MPI_Recv(X_p, sendcounts[p], MPI_INT, p, X_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         MPI_Recv(Y_p, sendcounts[p], MPI_INT, p, Y_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         MPI_Recv(Z_p, sendcounts[p], MPI_INT, p, Z_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        for (i = 0; i < sendcounts[rank]; i++) {
-            offset_start = p < rank ? i : i + 1;
 
+        for (i = 0; i < sendcounts[rank]; i++) {
+            offset_start = p > rank ? i : i + 1;
             for (j = offset_start; j < sendcounts[p]; j++) {
-//                printf("Process %d with %d: (%d, %d, %d) <-> (%d, %d, %d)\n", rank, p, X[i], Y[i], Z[i], X_p[j], Y_p[j], Z_p[j]);
                 double e = euclidean(X[i], Y[i], Z[i], X_p[j], Y_p[j], Z_p[j]);
                 int m = manhattan(X[i], Y[i], Z[i], X_p[j], Y_p[j], Z_p[j]);
+
+                printf("Distnace between (%d, %d, %d) and (%d, %d, %d) is %d\n", X[i], Y[i], Z[i], X_p[j], Y_p[j], Z_p[j], m);
 
                 max_e_local[i] = MAX(max_e_local[i], e);
                 min_e_local[i] = MIN(min_e_local[i], e);
@@ -90,27 +93,34 @@ int main(int argc, char **argv) {
                 max_m_local[i] = MAX(max_m_local[i], m);
                 min_m_local[i] = MIN(min_m_local[i], m);
 
-//                printf("Process %d with %d: e_max: %.2lf, m_min: %d\n", rank, p, max_e_local[i], min_m_local[i]);
+                max_e = MAX(max_e, e);
+                min_e = MIN(min_e, e);
+
+                max_m = MAX(max_m, m);
+                min_m = MIN(min_m, m);
             }
         }
     }
 
-    int max_sum_e = 0, min_sum_e = 0;
+    double max_sum_e = 0, min_sum_e = 0;
     int max_sum_m = 0, min_sum_m = 0;
 
     for (i = 0; i < sendcounts[rank]; i++) {
         max_sum_e += max_e_local[i];
-        min_sum_e += min_e_local[i];
+        min_sum_e += min_e_local[i] < INF ? min_e_local[i] : 0;
 
         max_sum_m += max_m_local[i];
-        min_sum_m += min_m_local[i];
+        min_sum_m += min_m_local[i] < INF ? min_m_local[i] : 0;
+
+//        printf("Process %d, point %d, min_sum_m: %d\n", rank, i, min_sum_m);
+//        printf("Process %d, point %d, max_sum_m: %d\n", rank, i, max_sum_m);
     }
 
-    int max_m_global = 0, min_m_global = (int) INFINITY;
-    int max_sum_m_global = 0, min_sum_m_global = 0;
+    int max_m_global, min_m_global;
+    int max_sum_m_global, min_sum_m_global;
 
-    double max_e_global = 0, min_e_global = (double) INFINITY;
-    double max_sum_e_global = 0, min_sum_e_global = 0;
+    double max_e_global, min_e_global;
+    double max_sum_e_global, min_sum_e_global;
 
     MPI_Reduce(&max_sum_e, &max_sum_e_global, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(&min_sum_e, &min_sum_e_global, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -124,10 +134,10 @@ int main(int argc, char **argv) {
 
     if (rank == 0) {
         printf("Distância Manhattan mínima: %d (soma min: %d) ", min_m_global, min_sum_m_global);
-        printf("e máxima: %d (soma max: %d)", min_m_global, max_sum_m_global);
+        printf("e máxima: %d (soma max: %d)\n", max_m_global, max_sum_m_global);
 
         printf("Distância Euclidiana mínima: %.2lf (soma min: %.2lf) ", min_e_global, min_sum_e_global);
-        printf("e máxima: %.2lf (soma max: %.2lf)", min_e_global, max_sum_e_global);
+        printf("e máxima: %.2lf (soma max: %.2lf)\n", max_e_global, max_sum_e_global);
     }
 
     for (p = 0; p < n_procs; p++) {
