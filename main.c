@@ -1,4 +1,5 @@
 #include <mpi.h>
+#include <omp.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +21,9 @@ int *receive_coord(int n, int n_procs, int rank, int *sendcounts);
 int manhattan(int x1, int y1, int z1, int x2, int y2, int z2);
 double euclidean(int x1, int y1, int z1, int x2, int y2, int z2);
 
+void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
+                   int n, int m, int rank, int p,
+                   int **max_m, int **min_m, double **max_e, double **min_e);
 
 int main(int argc, char **argv) {
     int n, s, t;
@@ -58,10 +62,7 @@ int main(int argc, char **argv) {
         min_m_local[i] = (int) INF;
     }
 
-    int max_m = 0, min_m = (int) INF;
-    double max_e = 0, min_e = (double) INF;
-
-    int p, i, j, offset_start = 0;
+    int p, i;
 
     MPI_Request *requests = (MPI_Request *) malloc((3 * n_procs) * sizeof(MPI_Request));
 
@@ -79,31 +80,15 @@ int main(int argc, char **argv) {
         MPI_Recv(Y_p, sendcounts[p], MPI_INT, p, Y_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         MPI_Recv(Z_p, sendcounts[p], MPI_INT, p, Z_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-        for (i = 0; i < sendcounts[rank]; i++) {
-            offset_start = p > rank ? i : i + 1;
-            for (j = offset_start; j < sendcounts[p]; j++) {
-                double e = euclidean(X[i], Y[i], Z[i], X_p[j], Y_p[j], Z_p[j]);
-                int m = manhattan(X[i], Y[i], Z[i], X_p[j], Y_p[j], Z_p[j]);
-
-                printf("Distnace between (%d, %d, %d) and (%d, %d, %d) is %d\n", X[i], Y[i], Z[i], X_p[j], Y_p[j], Z_p[j], m);
-
-                max_e_local[i] = MAX(max_e_local[i], e);
-                min_e_local[i] = MIN(min_e_local[i], e);
-
-                max_m_local[i] = MAX(max_m_local[i], m);
-                min_m_local[i] = MIN(min_m_local[i], m);
-
-                max_e = MAX(max_e, e);
-                min_e = MIN(min_e, e);
-
-                max_m = MAX(max_m, m);
-                min_m = MIN(min_m, m);
-            }
-        }
+        set_distances(X, Y, Z, X_p, Y_p, Z_p,
+                      sendcounts[rank], sendcounts[p], rank, p,
+                      &max_m_local, &min_m_local, &max_e_local,&min_e_local);
     }
 
     double max_sum_e = 0, min_sum_e = 0;
     int max_sum_m = 0, min_sum_m = 0;
+    int max_m = 0, min_m = (int) INF;
+    double max_e = 0, min_e = (double) INF;
 
     for (i = 0; i < sendcounts[rank]; i++) {
         max_sum_e += max_e_local[i];
@@ -112,8 +97,11 @@ int main(int argc, char **argv) {
         max_sum_m += max_m_local[i];
         min_sum_m += min_m_local[i] < INF ? min_m_local[i] : 0;
 
-//        printf("Process %d, point %d, min_sum_m: %d\n", rank, i, min_sum_m);
-//        printf("Process %d, point %d, max_sum_m: %d\n", rank, i, max_sum_m);
+        max_m = MAX(max_m, max_m_local[i]);
+        min_m = MIN(min_m, min_m_local[i]);
+
+        max_e = MAX(max_e, max_e_local[i]);
+        min_e = MIN(min_e, min_e_local[i]);
     }
 
     int max_m_global, min_m_global;
@@ -164,6 +152,37 @@ int main(int argc, char **argv) {
     MPI_Finalize();
 
     return 0;
+}
+
+void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
+                   int n, int m, int rank, int p,
+                   int **max_m, int **min_m, double **max_e, double **min_e) {
+    int i, j, offset_start;
+
+//    #pragma omp parallel for private(j, offset_start)
+    for (i = 0; i < n; i++) {
+        offset_start = p > rank ? i : i + 1;
+
+        int max_m_local = 0, min_m_local = (int) INF;
+        double max_e_local = 0, min_e_local = (double) INF;
+
+//        #pragma omp simd reduction(max:max_m_local) reduction(min:min_m_local) reduction(max:max_e_local) reduction(min:min_e_local) aligned(x, y, z, x_p, y_p, z_p: 32)
+        for (j = offset_start; j < m; j++) {
+            double e = euclidean(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
+            int m = manhattan(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
+
+            max_m_local = MAX(max_m_local, m);
+            min_m_local = MIN(min_m_local, m);
+
+            max_e_local = MAX(max_e_local, e);
+            min_e_local = MIN(min_e_local, e);
+        }
+        (*max_m)[i] = max_m_local;
+        (*min_m)[i] = min_m_local;
+
+        (*max_e)[i] = max_e_local;
+        (*min_e)[i] = min_e_local;
+    }
 }
 
 int get_params(int argc, char **argv, int *n, int *s, int *t) {
