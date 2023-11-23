@@ -96,6 +96,7 @@ int main(int argc, char **argv) {
     int max_m = 0, min_m = (int) INF;
     double max_e = 0, min_e = (double) INF;
 
+#pragma omp parallel for reduction(+:max_sum_e, max_sum_m, min_sum_e, min_sum_m) reduction(max:max_m, max_e) reduction(min:min_m, min_e)
     for (i = 0; i < sendcounts[rank]; i++) {
         max_sum_e += max_e_local[i];
         min_sum_e += min_e_local[i] < INF ? min_e_local[i] : 0;
@@ -108,30 +109,6 @@ int main(int argc, char **argv) {
 
         max_e = MAX(max_e, max_e_local[i]);
         min_e = MIN(min_e, min_e_local[i] < INF ? min_e_local[i] : INF);
-    }
-
-    int max_m_global, min_m_global;
-    int max_sum_m_global, min_sum_m_global;
-
-    double max_e_global, min_e_global;
-    double max_sum_e_global, min_sum_e_global;
-
-    MPI_Reduce(&max_sum_e, &max_sum_e_global, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&min_sum_e, &min_sum_e_global, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&max_e, &max_e_global, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&min_e, &min_e_global, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
-
-    MPI_Reduce(&max_sum_m, &max_sum_m_global, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&min_sum_m, &min_sum_m_global, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&max_m, &max_m_global, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&min_m, &min_m_global, 1, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
-
-    if (rank == 0) {
-        printf("Distância Manhattan mínima: %d (soma min: %d) ", min_m_global, min_sum_m_global);
-        printf("e máxima: %d (soma max: %d)\n", max_m_global, max_sum_m_global);
-
-        printf("Distância Euclidiana mínima: %.2lf (soma min: %.2lf) ", min_e_global, min_sum_e_global);
-        printf("e máxima: %.2lf (soma max: %.2lf)\n", max_e_global, max_sum_e_global);
     }
 
     for (p = 0; p < n_procs; p++) {
@@ -163,14 +140,14 @@ int main(int argc, char **argv) {
 void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
                    int n, int m, int rank, int p,
                    int **max_m, int **min_m, double **max_e, double **min_e) {
-    #pragma omp parallel for shared(n, m, x, y, z, x_p, y_p, z_p, p, rank, max_m, min_m, max_e, min_e)
+#pragma omp parallel for shared(n, m, x, y, z, x_p, y_p, z_p, p, rank, max_m, min_m, max_e, min_e)
     for (int i = 0; i < n; i++) {
         int offset_start = p > rank ? i : i + 1;
 
         int max_m_local = 0, min_m_local = (int) INF;
         double max_e_local = 0, min_e_local = (double) INF;
 
-        #pragma omp taskloop simd reduction(max:max_m_local, max_e_local) reduction(min:min_m_local, min_e_local)
+#pragma omp taskloop simd reduction(max:max_m_local, max_e_local) reduction(min:min_m_local, min_e_local)
         for (int j = offset_start; j < m; j++) {
             double e = euclidean(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
             int man_dist = manhattan(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
@@ -191,7 +168,34 @@ void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
         (*min_e)[i] = MIN((*min_e)[i], min_e_local);
     }
 
-    #pragma omp taskwait
+#pragma omp taskwait
+}
+
+void reduce_results(int *max_m, int *min_m, double *max_e, double *min_e, int *max_sum_m, int *min_sum_m, double *max_sum_e, double *min_sum_e,
+                    int rank) {
+    int max_m_global, min_m_global;
+    int max_sum_m_global, min_sum_m_global;
+
+    double max_e_global, min_e_global;
+    double max_sum_e_global, min_sum_e_global;
+
+    MPI_Reduce(max_sum_e, &max_sum_e_global, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(min_sum_e, &min_sum_e_global, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(max_e, &max_e_global, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(min_e, &min_e_global, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+
+    MPI_Reduce(max_sum_m, &max_sum_m_global, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(min_sum_m, &min_sum_m_global, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(max_m, &max_m_global, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(min_m, &min_m_global, 1, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        printf("Distância Manhattan mínima: %d (soma min: %d) ", min_m_global, min_sum_m_global);
+        printf("e máxima: %d (soma max: %d)\n", max_m_global, max_sum_m_global);
+
+        printf("Distância Euclidiana mínima: %.2lf (soma min: %.2lf) ", min_e_global, min_sum_e_global);
+        printf("e máxima: %.2lf (soma max: %.2lf)\n", max_e_global, max_sum_e_global);
+    }
 }
 
 int get_params(int argc, char **argv, int *n, int *s, int *t) {
