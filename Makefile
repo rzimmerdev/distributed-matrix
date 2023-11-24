@@ -13,17 +13,23 @@ main: main.c
 run: main
 	mpirun -np $(P) --hostfile $(HOSTFILE) ./main $(N) $(S) $(T)
 
+# Run the program NUM_RUNS times and calculate the average
+# Must be extremely precise with time measurements
 time: main
-	@echo "Calculating average time over $(NUM_RUNS) runs..."
-	@{ \
-	total_millis=0; \
-	for i in $$(seq 1 $(NUM_RUNS)); do \
-		duration=$$(/usr/bin/time -f "%e" mpirun -np $(P) --hostfile=$(HOSTFILE) ./main $(N) $(S) $(T) 2>&1 | tr -d '\n'); \
-		total_millis=$$(echo "$$total_millis + $$duration" | bc); \
+	@echo "Timing runs..."
+	@TOTAL_TIME="0"; \
+	for run in `seq 1 $(NUM_RUNS)`; do \
+		START=$$(date +%s.%N); \
+		mpirun -np $(P) --hostfile $(HOSTFILE) ./main $(N) $(S) $(T) > /dev/null; \
+		END=$$(date +%s.%N); \
+		RUN_TIME=$$(echo "scale=9; $$END - $$START" | bc); \
+		echo "Run $$run time: $$RUN_TIME seconds"; \
+		TOTAL_TIME=$$(echo "scale=9; $$TOTAL_TIME + $$RUN_TIME" | bc); \
 	done; \
-	avg_millis=$$(echo "scale=3; $$total_millis / $(NUM_RUNS)" | bc); \
-	echo "Average time: $$avg_millis seconds"; \
-	}
+	AVG_TIME=$$(echo "scale=9; $$TOTAL_TIME / $(NUM_RUNS)" | bc); \
+	AVG_TIME_MS=$$(echo "scale=3; $$AVG_TIME * 1000 / 1" | bc); \
+	echo "Average time: $$AVG_TIME_MS ms"
+
 
 clean:
 	rm -f main
