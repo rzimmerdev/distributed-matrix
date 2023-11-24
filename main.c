@@ -31,6 +31,10 @@ void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
                    int n, int m, int rank, int p,
                    int **max_m, int **min_m, double **max_e, double **min_e);
 
+void reduce_results(int *max_m, int *min_m, double *max_e, double *min_e,
+                    int *max_sum_m, int *min_sum_m, double *max_sum_e, double *min_sum_e,
+                    int rank);
+
 int main(int argc, char **argv) {
     int n, s, t;
 
@@ -46,6 +50,8 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
 
     srand(s);
+
+    omp_set_num_threads(t);
 
     int *sendcounts = get_sendcounts(n, n_procs);
 
@@ -96,7 +102,7 @@ int main(int argc, char **argv) {
     int max_m = 0, min_m = (int) INF;
     double max_e = 0, min_e = (double) INF;
 
-#pragma omp parallel for reduction(+:max_sum_e, max_sum_m, min_sum_e, min_sum_m) reduction(max:max_m, max_e) reduction(min:min_m, min_e)
+    #pragma omp parallel for reduction(+:max_sum_e, max_sum_m, min_sum_e, min_sum_m) reduction(max:max_m, max_e) reduction(min:min_m, min_e)
     for (i = 0; i < sendcounts[rank]; i++) {
         max_sum_e += max_e_local[i];
         min_sum_e += min_e_local[i] < INF ? min_e_local[i] : 0;
@@ -110,6 +116,10 @@ int main(int argc, char **argv) {
         max_e = MAX(max_e, max_e_local[i]);
         min_e = MIN(min_e, min_e_local[i] < INF ? min_e_local[i] : INF);
     }
+
+    reduce_results(&max_m, &min_m, &max_e, &min_e,
+                   &max_sum_m, &min_sum_m, &max_sum_e, &min_sum_e,
+                   rank);
 
     for (p = 0; p < n_procs; p++) {
         MPI_Wait(&requests[3 * p + 0], MPI_STATUS_IGNORE);
@@ -140,14 +150,14 @@ int main(int argc, char **argv) {
 void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
                    int n, int m, int rank, int p,
                    int **max_m, int **min_m, double **max_e, double **min_e) {
-#pragma omp parallel for shared(n, m, x, y, z, x_p, y_p, z_p, p, rank, max_m, min_m, max_e, min_e)
+    #pragma omp parallel for shared(n, m, x, y, z, x_p, y_p, z_p, p, rank, max_m, min_m, max_e, min_e)
     for (int i = 0; i < n; i++) {
         int offset_start = p > rank ? i : i + 1;
 
         int max_m_local = 0, min_m_local = (int) INF;
         double max_e_local = 0, min_e_local = (double) INF;
 
-#pragma omp taskloop simd reduction(max:max_m_local, max_e_local) reduction(min:min_m_local, min_e_local)
+        #pragma omp taskloop simd reduction(max:max_m_local, max_e_local) reduction(min:min_m_local, min_e_local)
         for (int j = offset_start; j < m; j++) {
             double e = euclidean(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
             int man_dist = manhattan(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
@@ -160,18 +170,17 @@ void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
         }
 
         (*max_m)[i] = MAX((*max_m)[i], max_m_local);
-
         (*min_m)[i] = MIN((*min_m)[i], min_m_local);
 
         (*max_e)[i] = MAX((*max_e)[i], max_e_local);
-
         (*min_e)[i] = MIN((*min_e)[i], min_e_local);
     }
 
 #pragma omp taskwait
 }
 
-void reduce_results(int *max_m, int *min_m, double *max_e, double *min_e, int *max_sum_m, int *min_sum_m, double *max_sum_e, double *min_sum_e,
+void reduce_results(int *max_m, int *min_m, double *max_e, double *min_e,
+                    int *max_sum_m, int *min_sum_m, double *max_sum_e, double *min_sum_e,
                     int rank) {
     int max_m_global, min_m_global;
     int max_sum_m_global, min_sum_m_global;
