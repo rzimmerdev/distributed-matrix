@@ -18,7 +18,7 @@ time: main
 	@{ \
 	total_millis=0; \
 	for i in $$(seq 1 $(NUM_RUNS)); do \
-		duration=$$(/usr/bin/time -f "%e" mpirun -np $(P) ./main $(N) $(S) $(T) 2>&1 >/dev/null); \
+		duration=$$(/usr/bin/time -f "%e" mpirun -np $(P) --hostfile=$(HOSTFILE) ./main $(N) $(S) $(T) 2>&1 | tr -d '\n'); \
 		total_millis=$$(echo "$$total_millis + $$duration" | bc); \
 	done; \
 	avg_millis=$$(echo "scale=3; $$total_millis / $(NUM_RUNS)" | bc); \
