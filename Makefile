@@ -1,5 +1,6 @@
 CC=mpicc
 CFLAGS=-Wall -fopenmp
+HOSTFILE=hostfile.txt
 
 P=4
 NUM_RUNS=5
@@ -10,7 +11,7 @@ main: main.c
 	$(CC) $(CFLAGS) -o main main.c -lm -g
 
 run: main
-	mpirun -np $(P) ./main $(N) $(S) $(T)
+	mpirun -np $(P) --hostfile $(HOSTFILE) ./main $(N) $(S) $(T)
 
 time: main
 	@echo "Calculating average time over $(NUM_RUNS) runs..."

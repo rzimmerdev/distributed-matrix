@@ -1,1 +1,11 @@
-localhost
+hal01
+hal02
+hal03
+hal04
+hal05
+hal06
+hal07
+hal08
+hal09
+hal10
+hal13
