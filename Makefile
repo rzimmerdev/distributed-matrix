@@ -15,7 +15,10 @@ run: main
 
 # Run the program NUM_RUNS times and calculate the average
 # Must be extremely precise with time measurements
+# elements is = N^2
 time: main
+	@echo "Number of runs: $(NUM_RUNS)"
+	@echo "Number of elements: $$(echo "$N * $N" | bc)"
 	@echo "Timing runs..."
 	@TOTAL_TIME="0"; \
 	for run in `seq 1 $(NUM_RUNS)`; do \
