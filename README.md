@@ -13,9 +13,9 @@
 
 * __Danielle Modesti__, nUSP 12543544
 * __Hélio Nogueira Cardoso__, nUSP 10310227
-* __Pedro Falcão Rocha__, nUSP ********
-* __Luis Eduardo de Brito Câmara__, nUSP ********
-* __Rafael Zimmer__, nUSP ********
+* __Pedro Falcão Rocha__, nUSP 12692408
+* __Luis Eduardo de Brito Câmara__, nUSP 12690282
+* __Rafael Zimmer__, nUSP 12542612
 
 ## Installation
 
