@@ -18,6 +18,7 @@
  *      - N: Matrix side length
  *      - S: Initial random seed
  *      - T: Number of OpenMP Threads
+ * --------------------------------------------
  */
 
 #include <mpi.h>
