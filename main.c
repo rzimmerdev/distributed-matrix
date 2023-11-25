@@ -71,11 +71,10 @@ int main(int argc, char **argv) {
     if (provided < MPI_THREAD_FUNNELED) {
         printf("MPI does not provide the needed threading level\n");
         MPI_Abort(MPI_COMM_WORLD, 1);
-    } else if (rank == 0) {
-        printf("MPI thread level support: %d\n", provided);
-    }
+    } 
 
     if (get_params(argc, argv, &n, &s, &t)) {
+        MPI_Finalize();
         return 1;
     } // From here on, n is the vector size, not the original one
 
