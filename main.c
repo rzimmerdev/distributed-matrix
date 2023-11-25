@@ -38,6 +38,14 @@ void reduce_results(int *max_m, int *min_m, double *max_e, double *min_e,
 int main(int argc, char **argv) {
     int n, s, t;
 
+    int provided;
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+
+    if (provided < MPI_THREAD_FUNNELED) {
+        printf("MPI does not provide the needed threading level\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
     if (get_params(argc, argv, &n, &s, &t)) {
         return 1;
     }
@@ -45,7 +53,6 @@ int main(int argc, char **argv) {
     // From here on, n is the vector size, not the original one
     int rank, n_procs;
 
-    MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
 
@@ -176,7 +183,7 @@ void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
         (*min_e)[i] = MIN((*min_e)[i], min_e_local);
     }
 
-#pragma omp taskwait
+    #pragma omp taskwait
 }
 
 void reduce_results(int *max_m, int *min_m, double *max_e, double *min_e,
