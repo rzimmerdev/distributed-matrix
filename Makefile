@@ -30,8 +30,7 @@ time: main
 		TOTAL_TIME=$$(echo "scale=9; $$TOTAL_TIME + $$RUN_TIME" | bc); \
 	done; \
 	AVG_TIME=$$(echo "scale=9; $$TOTAL_TIME / $(NUM_RUNS)" | bc); \
-	AVG_TIME_MS=$$(echo "scale=3; $$AVG_TIME * 1000 / 1" | bc); \
-	echo "Average time: $$AVG_TIME_MS ms"
+	echo "Average time: $$AVG_TIME s"
 
 
 test: version.c
