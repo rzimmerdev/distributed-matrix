@@ -1,3 +1,25 @@
+/**
+ * SSC0903 - Computacao de Alto Desempenho (2023.2)
+ * Trabalho 01 - Distancias de Manhattan e Eucliciana em C/MPI/OMP
+ * 
+ * -------------- GROUP MEMBERS ---------------
+ * NUSP 12543544 - Danielle Modesti
+ * NUSP 10310227 - Helio Nogueira Cardoso
+ * NUSP 12692408 - Pedro Falcao Rocha
+ * NUSP 12690282 - Luis Eduardo de Brito Camara
+ * NUSP 12542612 - Rafael Zimmer
+ * --------------------------------------------
+ * 
+ * -------- COMPILATION AND EXECUTION ---------
+ * mpicc -Wall -fopenmp -o main main.c -lm
+ * mpirun -np <P> --hostfile hostfile.txt ./main <N> <S> <T>
+ * -> Obs.:
+ *      - P: Number of processes
+ *      - N: Matrix side length
+ *      - S: Initial random seed
+ *      - T: Number of OpenMP Threads
+ */
+
 #include <mpi.h>
 #include <omp.h>
 #include <math.h>
