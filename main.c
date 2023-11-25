@@ -1,6 +1,6 @@
 /**
  * SSC0903 - Computacao de Alto Desempenho (2023.2)
- * Trabalho 01 - Distancias de Manhattan e Eucliciana em C/MPI/OMP
+ * Trabalho 01 - Distancias de Manhattan e Euclidiana em C/MPI/OMP
  * 
  * -------------- GROUP MEMBERS ---------------
  * NUSP 12543544 - Danielle Modesti
