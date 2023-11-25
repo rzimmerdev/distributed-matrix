@@ -34,5 +34,9 @@ time: main
 	echo "Average time: $$AVG_TIME_MS ms"
 
 
+test: version.c
+	$(CC) $(CFLAGS) -o version version.c -lm -g
+	mpirun -np $(P) --hostfile localhost.txt ./version
+
 clean:
 	rm -f main

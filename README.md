@@ -54,6 +54,13 @@ Download the wizard and install from the official [Microsoft-MPI](https://learn.
 
 ## Usage
 
+To test if the installation was successful, run:
+```bash
+$ make test # If successful, the output should be similar to:
+MPI version: 3.1
+OpenMP version (from macro _OPENMP): 201511
+```
+
 To compile and link all source code, and header files use:
 ```bash
 $ make all

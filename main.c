@@ -37,27 +37,26 @@ void reduce_results(int *max_m, int *min_m, double *max_e, double *min_e,
 
 int main(int argc, char **argv) {
     int n, s, t;
-
-    int provided;
-    MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
-
-    if (provided < MPI_THREAD_FUNNELED) {
-        printf("MPI does not provide the needed threading level\n");
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
-    if (get_params(argc, argv, &n, &s, &t)) {
-        return 1;
-    }
-
-    // From here on, n is the vector size, not the original one
     int rank, n_procs;
+    int provided;
+
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
 
-    srand(s);
+    if (provided < MPI_THREAD_FUNNELED) {
+        printf("MPI does not provide the needed threading level\n");
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    } else if (rank == 0) {
+        printf("MPI thread level support: %d\n", provided);
+    }
 
+    if (get_params(argc, argv, &n, &s, &t)) {
+        return 1;
+    } // From here on, n is the vector size, not the original one
+
+    srand(s);
     omp_set_num_threads(t);
 
     int *sendcounts = get_sendcounts(n, n_procs);
@@ -157,33 +156,57 @@ int main(int argc, char **argv) {
 void set_distances(int *x, int *y, int *z, int *x_p, int *y_p, int *z_p,
                    int n, int m, int rank, int p,
                    int **max_m, int **min_m, double **max_e, double **min_e) {
-    #pragma omp parallel for shared(n, m, x, y, z, x_p, y_p, z_p, p, rank, max_m, min_m, max_e, min_e)
-    for (int i = 0; i < n; i++) {
-        int offset_start = p > rank ? i : i + 1;
+    #pragma omp parallel shared(n, m, x, y, z, x_p, y_p, z_p, p, rank, max_m, min_m, max_e, min_e)
+    {
+        #pragma omp for schedule(guided) nowait
+        for (int i = 0; i < n; i++) {
+            int offset_start = p > rank ? i : i + 1;
 
-        int max_m_local = 0, min_m_local = (int) INF;
-        double max_e_local = 0, min_e_local = (double) INF;
+            int max_m_local = 0, min_m_local = INF;
+            double max_e_local = 0, min_e_local = INF;
 
-        #pragma omp taskloop simd reduction(max:max_m_local, max_e_local) reduction(min:min_m_local, min_e_local)
-        for (int j = offset_start; j < m; j++) {
-            double e = euclidean(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
-            int man_dist = manhattan(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
+            #pragma omp task firstprivate(i, offset_start) shared(x, y, z, x_p, y_p, z_p, max_m_local, min_m_local)
+            {
+                int max_m_task = 0, min_m_task = INF;
 
-            max_m_local = MAX(max_m_local, man_dist);
-            min_m_local = MIN(min_m_local, man_dist);
+                #pragma omp simd reduction(max:max_m_task) reduction(min:min_m_task)
+                for (int j = offset_start; j < m; j++) {
+                    int man_dist = manhattan(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
+                    max_m_task = MAX(max_m_task, man_dist);
+                    min_m_task = MIN(min_m_task, man_dist);
+                }
+                #pragma omp critical
+                {
+                    max_m_local = MAX(max_m_local, max_m_task);
+                    min_m_local = MIN(min_m_local, min_m_task);
+                }
+            }
 
-            max_e_local = MAX(max_e_local, e);
-            min_e_local = MIN(min_e_local, e);
+            #pragma omp task firstprivate(i, offset_start) shared(x, y, z, x_p, y_p, z_p, max_e_local, min_e_local)
+            {
+                double max_e_task = 0, min_e_task = INF;
+
+                #pragma omp simd reduction(max:max_e_task) reduction(min:min_e_task)
+                for (int j = offset_start; j < m; j++) {
+                    double e = euclidean(x[i], y[i], z[i], x_p[j], y_p[j], z_p[j]);
+                    max_e_task = MAX(max_e_task, e);
+                    min_e_task = MIN(min_e_task, e);
+                }
+                #pragma omp critical
+                {
+                    max_e_local = MAX(max_e_local, max_e_task);
+                    min_e_local = MIN(min_e_local, min_e_task);
+                }
+            }
+
+            #pragma omp taskwait
+            (*max_m)[i] = MAX((*max_m)[i], max_m_local);
+            (*min_m)[i] = MIN((*min_m)[i], min_m_local);
+            (*max_e)[i] = MAX((*max_e)[i], max_e_local);
+            (*min_e)[i] = MIN((*min_e)[i], min_e_local);
         }
-
-        (*max_m)[i] = MAX((*max_m)[i], max_m_local);
-        (*min_m)[i] = MIN((*min_m)[i], min_m_local);
-
-        (*max_e)[i] = MAX((*max_e)[i], max_e_local);
-        (*min_e)[i] = MIN((*min_e)[i], min_e_local);
     }
 
-    #pragma omp taskwait
 }
 
 void reduce_results(int *max_m, int *min_m, double *max_e, double *min_e,
