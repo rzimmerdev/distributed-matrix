@@ -11,8 +11,8 @@
 
 ## Authors
 
-* __Danielle Modesti__, nUSP ********
-* __Hélio Nogueira Cardoso__, nUSP ********
+* __Danielle Modesti__, nUSP 12543544
+* __Hélio Nogueira Cardoso__, nUSP 10310227
 * __Pedro Falcão Rocha__, nUSP ********
 * __Luis Eduardo de Brito Câmara__, nUSP ********
 * __Rafael Zimmer__, nUSP ********
